@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project specific
+*.txt
+tiktok_cookies.txt
+report.txt
+my_video.mp4
+*.mp4
+*.mov
+*.avi
+
+# Multi-account data
+accounts.json
+proxies.json
+emails.txt
+tasks.json
+scheduled_tasks.json
+
+# Logs
+*.log
+
+# Environment variables
+.env
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,32 @@
+[
+  {
+    "email": "example1@gmail.com",
+    "password": "secure_password_123",
+    "username": "user123",
+    "proxy": {
+      "host": "proxy1.example.com",
+      "port": 8080,
+      "protocol": "http"
+    },
+    "status": "active",
+    "created_at": "2024-02-27T10:00:00",
+    "last_used": "2024-02-27T12:00:00",
+    "cookies": {}
+  },
+  {
+    "email": "example2@yahoo.com",
+    "password": "another_secure_pass",
+    "username": "cooluser456",
+    "proxy": {
+      "host": "proxy2.example.com",
+      "port": 8080,
+      "protocol": "http",
+      "username": "proxyuser",
+      "password": "proxypass"
+    },
+    "status": "active",
+    "created_at": "2024-02-27T11:00:00",
+    "last_used": null,
+    "cookies": {}
+  }
+]
