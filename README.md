@@ -6,6 +6,7 @@ A powerful **TikTok Automation Bot** that automates various tasks such as loggin
 > - [Quick Start Guide](QUICKSTART.md) - Get running in 5 minutes
 > - [Usage Examples](USAGE_EXAMPLES.md) - Detailed code examples
 > - [Multi-Account Guide](MULTI_ACCOUNT_GUIDE.md) - Multi-account features
+> - [Email Generation Guide](EMAIL_GENERATION_GUIDE.md) - Email generation strategies
 > - [Upgrade Notes](UPGRADE_NOTES.md) - Migrating from v1.0.0
 
 > **⚠️ Important Notice:** TikTok frequently updates their website structure, which may break automation scripts. This project uses multiple selector strategies and error handling to improve reliability, but some features may require adjustments over time.
@@ -21,7 +22,9 @@ A powerful **TikTok Automation Bot** that automates various tasks such as loggin
 - **Account Creation**: Automated account creation with email generation and proxy support
 - **Proxy Management**: Full proxy support with rotation strategies for anonymity
 - **Batch Operations**: Execute tasks across multiple accounts in parallel
-- **Email Generation**: Multiple strategies for generating email addresses
+- **Real Email Generation**: Integration with temporary email services (Guerrilla Mail, 10 Minute Mail, Temp Mail)
+- **Email Verification**: Automatic email waiting and verification code extraction
+- **Multiple Email Strategies**: Random, temp services, or custom email lists
 - **Logging**: Comprehensive logging to track bot activities and debug issues
 - **Error Handling**: Robust error handling with multiple selector strategies
 - **Configuration**: Centralized configuration file for easy customization

@@ -58,9 +58,13 @@ PROXIES_FILE = "proxies.json"
 PROXY_ROTATION_STRATEGY = "round_robin"  # Options: "round_robin", "random", "least_used"
 
 # Email Generation Settings
-EMAIL_GENERATION_STRATEGY = "random"  # Options: "random", "temp", "custom"
+EMAIL_GENERATION_STRATEGY = "random"  # Options: "random", "guerrillamail", "10minutemail", "tempmail", "custom"
 CUSTOM_EMAILS_FILE = "emails.txt"
 EMAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com"]
+
+# Email Service Settings
+EMAIL_WAIT_TIMEOUT = 300  # Seconds to wait for verification email
+EMAIL_CHECK_INTERVAL = 5  # Seconds between inbox checks
 
 # TikTok URLs
 TIKTOK_BASE_URL = "https://www.tiktok.com"

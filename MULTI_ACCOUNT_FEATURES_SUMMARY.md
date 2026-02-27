@@ -70,29 +70,45 @@ count = proxy_manager.export_proxies('backup.json')
 ## 3. Email Generation System
 
 ### Features
-- Three email generation strategies:
-  1. **Random**: Generates random emails with configurable domains
-  2. **Temporary**: Framework for temp email service integration
-  3. **Custom**: Uses your own list of email addresses
+- Five email generation strategies:
+  1. **Random**: Generates random emails with configurable domains (testing only)
+  2. **Guerrilla Mail**: Real temp emails via API with inbox access
+  3. **10 Minute Mail**: Temporary emails valid for 10 minutes
+  4. **Temp Mail**: Fast API-based temp emails with multiple domains
+  5. **Custom**: Uses your own list of email addresses
+- Automatic email waiting for verification codes
+- Inbox access for all temp email services
+- Verification code extraction from email bodies
 - Email validation utilities
 - Email domain extraction
 - Email normalization
+- Web scraping with BeautifulSoup
 
 ### File: `email_generator.py`
 
 **Key Classes:**
 - `EmailGenerator` - Main email generator class
-- `RandomEmailGenerator` - Random email generation
-- `TempEmailProvider` - Temp email service wrapper
+- `RandomEmailGenerator` - Random email generation (testing)
+- `GuerrillaMailProvider` - Guerrilla Mail API integration
+- `TenMinuteMailProvider` - 10minutemail.com scraping
+- `TempMailProvider` - temp-mail.org API integration
 - `CustomEmailList` - Custom email list management
 - `EmailValidator` - Email validation utilities
 
 **Key Functions:**
 ```python
-generator = EmailGenerator(strategy='random', domains=['gmail.com', 'yahoo.com'])
+# Generate email
+generator = EmailGenerator(strategy='guerrillamail')
 email = generator.generate_email()
-emails = generator.bulk_generate(10)
+
+# Wait for verification email
+message = generator.wait_for_email(email, timeout=300)
+
+# Check inbox
 inbox = generator.get_inbox(email)
+
+# Bulk generate
+emails = generator.bulk_generate(10)
 ```
 
 ## 4. Multi-Account Bot Manager

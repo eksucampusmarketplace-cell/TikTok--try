@@ -2,6 +2,99 @@
 
 All notable changes to the TikTok Automation Bot project will be documented in this file.
 
+## [2.1.1] - 2024-02-27
+
+### Fixed - Email Generation 🎉
+
+**Problem**: Previous email generation only created fake email addresses that couldn't receive verification emails, making real account creation impossible.
+
+**Solution**: Integrated with real temporary email services that provide working email addresses and inbox access.
+
+### New Email Providers
+
+- **Guerrilla Mail** (`guerrillamail`)
+  - Real working temporary email addresses
+  - API-based email generation
+  - Inbox access for verification emails
+  - Automatic email waiting functionality
+  - 15-60 minute email expiry
+
+- **10 Minute Mail** (`10minutemail`)
+  - Temporary emails valid for 10 minutes
+  - Web scraping integration
+  - Inbox access and message parsing
+  - Ideal for short-term email needs
+
+- **Temp Mail** (`tempmail`)
+  - Uses temp-mail.org API
+  - API-based (fast and reliable)
+  - Multiple domain options
+  - Real working email addresses
+  - Automatic inbox checking
+
+### Email Generation Features
+
+- **Automatic Email Waiting**: Wait for verification emails with configurable timeout
+- **Inbox Access**: Check inbox for messages
+- **Verification Code Extraction**: Extract codes from email bodies
+- **Multiple Strategies**: Choose between random, temp services, or custom lists
+- **Error Handling**: Comprehensive error handling for email service failures
+- **Web Scraping**: BeautifulSoup integration for scraping email pages
+- **Rate Limiting**: Configurable check intervals to avoid blocking
+
+### Updated Configuration
+
+```python
+# Email Generation Settings
+EMAIL_GENERATION_STRATEGY = "guerrillamail"  # Now supports real services
+CUSTOM_EMAILS_FILE = "emails.txt"
+EMAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com"]
+
+# Email Service Settings (NEW)
+EMAIL_WAIT_TIMEOUT = 300  # Seconds to wait for verification email
+EMAIL_CHECK_INTERVAL = 5  # Seconds between inbox checks
+```
+
+### Updated Dependencies
+
+- Added `beautifulsoup4>=4.12.0` for web scraping
+- Added `lxml>=4.9.0` as HTML parser
+
+### Documentation
+
+- **EMAIL_GENERATION_GUIDE.md** (13,249 bytes) - Complete guide for email generation
+  - All email strategies explained
+  - Usage examples
+  - Verification code extraction
+  - Troubleshooting guide
+  - Best practices
+
+### Modified Files
+
+- `email_generator.py` - Complete rewrite with real email service integrations
+  - Added GuerrillaMailProvider class
+  - Added TenMinuteMailProvider class
+  - Added TempMailProvider class
+  - Added wait_for_email() method to all providers
+  - Improved error handling
+
+- `config.py` - Added email service settings
+- `requirements.txt` - Added beautifulsoup4 and lxml
+- `main.py` - Updated account creation wizard with strategy selection
+- `README.md` - Updated features and documentation links
+
+### Breaking Changes
+
+None - all changes are backward compatible.
+
+### Notes
+
+- **Guerrilla Mail** is recommended for most use cases (API-based, reliable)
+- **Temp Mail** is fastest but has shorter expiry
+- **10 Minute Mail** may be blocked by anti-bot protections
+- **Random** strategy is now clearly marked as testing-only
+- Email services may rate limit requests - use appropriate delays
+
 ## [2.1.0] - 2024-02-27
 
 ### Added - Multi-Account Support 🎉

@@ -378,18 +378,42 @@ def account_creation_wizard(account_manager: AccountManager):
     print("Account Creation Wizard")
     print("=" * 60)
     
+    # Email strategy selection
+    print("\nSelect Email Strategy:")
+    print("1. Random (for testing - won't work for real accounts)")
+    print("2. Guerrilla Mail (temp mail service)")
+    print("3. 10 Minute Mail (temp mail service)")
+    print("4. Temp Mail (temp-mail.org)")
+    print("5. Custom Email List (use your own emails)")
+    print("-" * 60)
+    
+    strategy_choice = input("Select email strategy (1-5): ").strip()
+    
+    strategy_map = {
+        '1': 'random',
+        '2': 'guerrillamail',
+        '3': '10minutemail',
+        '4': 'tempmail',
+        '5': 'custom'
+    }
+    
+    strategy = strategy_map.get(strategy_choice)
+    if not strategy:
+        print("\n✗ Invalid choice. Using default strategy.")
+        strategy = config.EMAIL_GENERATION_STRATEGY
+    
     # Initialize managers
     proxy_manager = ProxyManager(config.PROXIES_FILE) if config.USE_PROXIES else None
     email_generator = EmailGenerator(
-        strategy=config.EMAIL_GENERATION_STRATEGY,
+        strategy=strategy,
         domains=config.EMAIL_DOMAINS,
         emails_file=config.CUSTOM_EMAILS_FILE
     )
     
     account_creator = AccountCreator(account_manager, proxy_manager, email_generator)
     
-    print("\nAccount creation will:")
-    print("- Generate new email addresses")
+    print(f"\nAccount creation will:")
+    print(f"- Use {strategy} email strategy")
     print("- Generate secure passwords")
     print("- Assign proxies (if enabled)")
     print("- Create TikTok accounts")
