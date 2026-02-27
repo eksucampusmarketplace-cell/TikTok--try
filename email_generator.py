@@ -375,43 +375,6 @@ class TempMailProvider(EmailProvider):
         return None
 
 
-class TempEmailProvider(EmailProvider):
-    """
-    Wrapper for temporary email services.
-    Note: This would require integration with specific temp email APIs.
-    """
-    
-    def __init__(self, service: str = 'guerrillamail'):
-        """
-        Initialize temp email provider.
-        
-        Args:
-            service: Temp email service name
-        """
-        self.service = service
-        self.current_email = None
-    
-    def generate_email(self) -> str:
-        """Generate a temporary email address."""
-        # This would integrate with actual temp email APIs
-        # For now, returning a placeholder
-        import time
-        timestamp = int(time.time())
-        self.current_email = f"temp{timestamp}@tempmail.com"
-        logger.info(f"Generated temp email: {self.current_email}")
-        return self.current_email
-    
-    def get_inbox(self, email: str) -> List[dict]:
-        """Get inbox messages for temporary email."""
-        # This would integrate with actual temp email APIs
-        logger.info(f"Checking inbox for: {email}")
-        return []
-    
-    def wait_for_email(self, email: str, timeout: int = 300) -> Optional[Dict]:
-        """Not implemented."""
-        return None
-
-
 class CustomEmailList:
     """Manages a custom list of email addresses."""
     
