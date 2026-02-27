@@ -721,14 +721,18 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
         time.sleep(1)
         
         # Click Next button after email (TikTok uses multi-step signup)
+        logger.info("Looking for Next button after email...")
         next_selectors = [
             (By.XPATH, '//button[contains(text(), "Next")]'),
             (By.XPATH, '//button[@type="submit"]'),
             (By.XPATH, '//button[contains(@class, "next")]'),
             (By.CSS_SELECTOR, 'button[type="submit"]'),
             (By.XPATH, '//div[contains(@role, "button") and contains(text(), "Next")]'),
+            (By.XPATH, '//button//span[contains(text(), "Next")]'),
+            (By.XPATH, '//input[@type="submit"]'),
         ]
         
+        next_clicked = False
         for selector in next_selectors:
             try:
                 next_btn = WebDriverWait(driver, 5).until(
@@ -736,14 +740,26 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
                 )
                 next_btn.click()
                 logger.info("Clicked Next button after email")
+                next_clicked = True
                 time.sleep(3)
                 break
             except:
                 continue
         
+        if not next_clicked:
+            # Try pressing Enter as fallback
+            try:
+                from selenium.webdriver.common.keys import Keys
+                email_input.send_keys(Keys.ENTER)
+                logger.info("Pressed Enter to proceed")
+                time.sleep(3)
+            except:
+                pass
+        
         time.sleep(2)
         
         # Enter password - try multiple selectors for different TikTok page versions
+        logger.info("Looking for password input field...")
         password_selectors = [
             (By.XPATH, '//input[@type="password"]'),
             (By.XPATH, '//input[@name="password"]'),
@@ -753,17 +769,36 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
             (By.CSS_SELECTOR, 'input[placeholder*="password"]'),
             (By.XPATH, '//div[contains(@class, "password")]//input'),
             (By.XPATH, '//input[contains(@class, "password")]'),
+            (By.XPATH, '//input[@autocomplete="new-password"]'),
+            (By.XPATH, '//input[@id="password"]'),
         ]
         
-        password_input = bot.find_element_multiple_selectors(password_selectors, timeout=15)
+        password_input = None
+        for _ in range(3):  # Try 3 times with delays
+            password_input = bot.find_element_multiple_selectors(password_selectors, timeout=10)
+            if password_input:
+                break
+            logger.info("Password field not found, waiting...")
+            time.sleep(3)
+        
         if password_input:
-            password_input.clear()
+            try:
+                password_input.clear()
+            except:
+                pass
             for char in password:
                 password_input.send_keys(char)
                 time.sleep(random.uniform(0.02, 0.05))
             logger.info("Entered password")
         else:
             logger.error("Could not find password input field")
+            logger.info("Page source snippet for debugging:")
+            try:
+                # Log some page info for debugging
+                page_url = driver.current_url
+                logger.info(f"Current URL: {page_url}")
+            except:
+                pass
             return None
         
         time.sleep(1)
