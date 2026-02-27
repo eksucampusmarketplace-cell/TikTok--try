@@ -555,5 +555,407 @@ def log_report(message):
         logger.error(f"Error writing to report file: {e}")
 
 
+def signup(driver, email, password, username=None, birth_date=None, email_provider=None):
+    """
+    Create a new TikTok account.
+    
+    Args:
+        driver: Selenium WebDriver instance
+        email: Email address for the account
+        password: Password for the account
+        username: Optional username (will be generated if not provided)
+        birth_date: Optional birth date dict with 'month', 'day', 'year' keys
+        email_provider: Optional email provider instance for verification
+    
+    Returns:
+        dict: Account data if successful, None otherwise
+    """
+    bot = TikTokBot(driver)
+    
+    try:
+        logger.info("Starting TikTok account signup process...")
+        
+        # Navigate to TikTok signup page
+        driver.get("https://www.tiktok.com/signup")
+        time.sleep(5)
+        
+        # Check if we need to accept cookies
+        try:
+            cookie_btn = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(), "Accept") or contains(text(), "Accept all")]'))
+            )
+            cookie_btn.click()
+            logger.info("Accepted cookies")
+            time.sleep(1)
+        except:
+            pass
+        
+        # Click on "Use phone or email" option
+        try:
+            phone_email_btn = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, '//div[contains(text(), "Use phone or email") or contains(@data-e2e, "phone-email")]'))
+            )
+            phone_email_btn.click()
+            logger.info("Selected phone/email signup")
+            time.sleep(2)
+        except TimeoutException:
+            # Try alternative selectors
+            try:
+                alt_btn = driver.find_element(By.XPATH, '//div[contains(@class, "channel-item") and contains(text(), "email")]')
+                alt_btn.click()
+                logger.info("Selected email signup (alternative)")
+                time.sleep(2)
+            except:
+                logger.error("Could not find email signup option")
+                return None
+        
+        # Switch to email tab if needed
+        try:
+            email_tab = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.XPATH, '//div[contains(text(), "Email") or @data-e2e="email-tab"]'))
+            )
+            email_tab.click()
+            logger.info("Switched to email tab")
+            time.sleep(1)
+        except:
+            logger.info("Email tab not needed or already selected")
+        
+        # Fill in birth date if required
+        if birth_date:
+            try:
+                # Month dropdown
+                month_dropdown = driver.find_element(By.XPATH, '//select[contains(@name, "month") or @data-e2e="month"]')
+                month_dropdown.click()
+                month_option = driver.find_element(By.XPATH, f'//option[@value="{birth_date["month"]}"]')
+                month_option.click()
+                time.sleep(0.5)
+                
+                # Day dropdown
+                day_dropdown = driver.find_element(By.XPATH, '//select[contains(@name, "day") or @data-e2e="day"]')
+                day_dropdown.click()
+                day_option = driver.find_element(By.XPATH, f'//option[@value="{birth_date["day"]}"]')
+                day_option.click()
+                time.sleep(0.5)
+                
+                # Year dropdown
+                year_dropdown = driver.find_element(By.XPATH, '//select[contains(@name, "year") or @data-e2e="year"]')
+                year_dropdown.click()
+                year_option = driver.find_element(By.XPATH, f'//option[@value="{birth_date["year"]}"]')
+                year_option.click()
+                time.sleep(0.5)
+                
+                logger.info("Entered birth date")
+                
+                # Click next/continue after birth date
+                try:
+                    next_btn = driver.find_element(By.XPATH, '//button[contains(text(), "Next") or contains(text(), "Continue")]')
+                    next_btn.click()
+                    time.sleep(2)
+                except:
+                    pass
+                    
+            except Exception as e:
+                logger.warning(f"Could not enter birth date: {e}")
+        else:
+            # Use a default birth date (over 18)
+            try:
+                # Check if birth date form is visible
+                month_selectors = [
+                    (By.XPATH, '//select[contains(@name, "month")]'),
+                    (By.XPATH, '//div[@data-e2e="month"]//select'),
+                ]
+                
+                month_elem = bot.find_element_multiple_selectors(month_selectors, timeout=3)
+                if month_elem:
+                    # Select January
+                    month_elem.click()
+                    time.sleep(0.3)
+                    driver.find_element(By.XPATH, '//option[@value="1" or text()="January"]').click()
+                    
+                    # Select day 15
+                    day_elem = driver.find_element(By.XPATH, '//select[contains(@name, "day")]')
+                    day_elem.click()
+                    time.sleep(0.3)
+                    driver.find_element(By.XPATH, '//option[@value="15"]').click()
+                    
+                    # Select year 1995
+                    year_elem = driver.find_element(By.XPATH, '//select[contains(@name, "year")]')
+                    year_elem.click()
+                    time.sleep(0.3)
+                    driver.find_element(By.XPATH, '//option[@value="1995"]').click()
+                    
+                    logger.info("Entered default birth date")
+                    
+                    # Click next
+                    try:
+                        next_btn = driver.find_element(By.XPATH, '//button[contains(text(), "Next")]')
+                        next_btn.click()
+                        time.sleep(2)
+                    except:
+                        pass
+            except:
+                logger.info("Birth date form not present or already passed")
+        
+        # Enter email - try multiple selectors for different TikTok page versions
+        email_selectors = [
+            (By.XPATH, '//input[@type="email"]'),
+            (By.XPATH, '//input[@name="email"]'),
+            (By.XPATH, '//input[contains(@placeholder, "email")]'),
+            (By.XPATH, '//input[@type="text"]'),
+            (By.CSS_SELECTOR, 'input[type="email"]'),
+            (By.CSS_SELECTOR, 'input[name="email"]'),
+            (By.CSS_SELECTOR, 'input[placeholder*="email"]'),
+        ]
+        
+        email_input = bot.find_element_multiple_selectors(email_selectors, timeout=10)
+        if email_input:
+            email_input.clear()
+            for char in email:
+                email_input.send_keys(char)
+                time.sleep(random.uniform(0.02, 0.05))
+            logger.info(f"Entered email: {email}")
+        else:
+            logger.error("Could not find email input field")
+            return None
+        
+        time.sleep(1)
+        
+        # Click Next button after email (TikTok uses multi-step signup)
+        next_selectors = [
+            (By.XPATH, '//button[contains(text(), "Next")]'),
+            (By.XPATH, '//button[@type="submit"]'),
+            (By.XPATH, '//button[contains(@class, "next")]'),
+            (By.CSS_SELECTOR, 'button[type="submit"]'),
+            (By.XPATH, '//div[contains(@role, "button") and contains(text(), "Next")]'),
+        ]
+        
+        for selector in next_selectors:
+            try:
+                next_btn = WebDriverWait(driver, 5).until(
+                    EC.element_to_be_clickable(selector)
+                )
+                next_btn.click()
+                logger.info("Clicked Next button after email")
+                time.sleep(3)
+                break
+            except:
+                continue
+        
+        time.sleep(2)
+        
+        # Enter password - try multiple selectors for different TikTok page versions
+        password_selectors = [
+            (By.XPATH, '//input[@type="password"]'),
+            (By.XPATH, '//input[@name="password"]'),
+            (By.XPATH, '//input[contains(@placeholder, "password")]'),
+            (By.CSS_SELECTOR, 'input[type="password"]'),
+            (By.CSS_SELECTOR, 'input[name="password"]'),
+            (By.CSS_SELECTOR, 'input[placeholder*="password"]'),
+            (By.XPATH, '//div[contains(@class, "password")]//input'),
+            (By.XPATH, '//input[contains(@class, "password")]'),
+        ]
+        
+        password_input = bot.find_element_multiple_selectors(password_selectors, timeout=15)
+        if password_input:
+            password_input.clear()
+            for char in password:
+                password_input.send_keys(char)
+                time.sleep(random.uniform(0.02, 0.05))
+            logger.info("Entered password")
+        else:
+            logger.error("Could not find password input field")
+            return None
+        
+        time.sleep(1)
+        
+        # Enter username if field is present
+        if username:
+            username_selectors = [
+                (By.XPATH, '//input[@name="username"]'),
+                (By.XPATH, '//input[contains(@placeholder, "username")]'),
+            ]
+            
+            username_input = bot.find_element_multiple_selectors(username_selectors, timeout=5)
+            if username_input:
+                username_input.clear()
+                for char in username:
+                    username_input.send_keys(char)
+                    time.sleep(random.uniform(0.02, 0.05))
+                logger.info(f"Entered username: {username}")
+        
+        # Click sign up button
+        signup_selectors = [
+            (By.XPATH, '//button[@type="submit"]'),
+            (By.XPATH, '//button[contains(text(), "Sign up")]'),
+            (By.XPATH, '//button[contains(text(), "Next")]'),
+        ]
+        
+        for selector in signup_selectors:
+            try:
+                signup_btn = WebDriverWait(driver, 5).until(
+                    EC.element_to_be_clickable(selector)
+                )
+                signup_btn.click()
+                logger.info("Clicked signup button")
+                break
+            except:
+                continue
+        
+        time.sleep(5)
+        
+        # Check for captcha
+        try:
+            captcha_frame = driver.find_element(By.XPATH, '//iframe[contains(@src, "captcha")]')
+            logger.warning("Captcha detected! Manual intervention required.")
+            print("\n" + "="*60)
+            print("CAPTCHA DETECTED!")
+            print("Please solve the captcha manually in the browser window.")
+            print("="*60 + "\n")
+            
+            # Wait for user to solve captcha
+            input("Press Enter after solving the captcha...")
+            time.sleep(3)
+        except:
+            pass
+        
+        # Check for email verification
+        try:
+            verification_code_input = driver.find_element(By.XPATH, '//input[contains(@placeholder, "code") or @name="code"]')
+            logger.info("Email verification code required")
+            
+            if email_provider:
+                # Wait for verification email
+                print("\n" + "="*60)
+                print(f"Waiting for verification email at: {email}")
+                print("This may take up to 2 minutes...")
+                print("="*60 + "\n")
+                
+                verification_email = email_provider.wait_for_email(email, timeout=120)
+                
+                if verification_email:
+                    # Extract verification code from email body
+                    import re
+                    body = verification_email.get('body', '')
+                    code_match = re.search(r'\b(\d{4,6})\b', body)
+                    
+                    if code_match:
+                        code = code_match.group(1)
+                        logger.info(f"Found verification code: {code}")
+                        
+                        verification_code_input.clear()
+                        for char in code:
+                            verification_code_input.send_keys(char)
+                            time.sleep(0.1)
+                        
+                        logger.info("Entered verification code")
+                        time.sleep(2)
+                    else:
+                        print(f"\nEmail body: {body[:500]}")
+                        code = input("Enter the verification code manually: ").strip()
+                        verification_code_input.clear()
+                        verification_code_input.send_keys(code)
+                        time.sleep(2)
+                else:
+                    code = input("Enter the verification code manually: ").strip()
+                    verification_code_input.clear()
+                    verification_code_input.send_keys(code)
+                    time.sleep(2)
+            else:
+                print("\n" + "="*60)
+                print(f"Please check your email: {email}")
+                print("Enter the verification code from TikTok's email.")
+                print("="*60 + "\n")
+                code = input("Enter the verification code: ").strip()
+                verification_code_input.clear()
+                verification_code_input.send_keys(code)
+                time.sleep(2)
+                
+        except NoSuchElementException:
+            logger.info("No verification code input found - account may be created")
+        
+        # Wait for account creation to complete
+        time.sleep(5)
+        
+        # Check if we're on the home page or if account was created
+        current_url = driver.current_url
+        
+        if 'signup' not in current_url.lower() or 'foryou' in current_url.lower():
+            logger.info("Account creation successful!")
+            
+            # Get cookies
+            cookies = driver.get_cookies()
+            
+            # Generate username if not provided
+            if not username:
+                username = f"user{random.randint(100000, 999999)}"
+            
+            account_data = {
+                'email': email,
+                'password': password,
+                'username': username,
+                'status': 'active',
+                'created_at': datetime.now().isoformat(),
+                'cookies': cookies,
+                'last_used': None
+            }
+            
+            log_report(f"Created TikTok account: {email}")
+            return account_data
+        else:
+            logger.warning("Account creation may need additional steps")
+            print("\nPlease complete any remaining steps in the browser window.")
+            input("Press Enter when done...")
+            
+            cookies = driver.get_cookies()
+            
+            if not username:
+                username = f"user{random.randint(100000, 999999)}"
+            
+            account_data = {
+                'email': email,
+                'password': password,
+                'username': username,
+                'status': 'created',
+                'created_at': datetime.now().isoformat(),
+                'cookies': cookies,
+                'last_used': None
+            }
+            
+            return account_data
+            
+    except Exception as e:
+        logger.error(f"Error during signup: {e}")
+        return None
+
+
+def check_username_availability(driver, username):
+    """
+    Check if a TikTok username is available.
+    
+    Args:
+        driver: Selenium WebDriver instance
+        username: Username to check
+    
+    Returns:
+        bool: True if username is available
+    """
+    try:
+        driver.get(f"https://www.tiktok.com/@{username}")
+        time.sleep(3)
+        
+        # Check if we got a "user not found" page
+        page_source = driver.page_source.lower()
+        if 'couldn\'t find this account' in page_source or 'user not found' in page_source:
+            logger.info(f"Username @{username} is available")
+            return True
+        
+        logger.info(f"Username @{username} is taken")
+        return False
+        
+    except Exception as e:
+        logger.error(f"Error checking username: {e}")
+        return False
+
+
 # Maintain backward compatibility with the old class name
 tiktok_bot = TikTokBot

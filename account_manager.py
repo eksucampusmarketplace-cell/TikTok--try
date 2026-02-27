@@ -231,7 +231,8 @@ class AccountCreator:
         self.email_generator = email_generator
     
     def create_account(self, driver, use_proxy: bool = True, 
-                       email: Optional[str] = None, password: Optional[str] = None) -> Optional[Dict]:
+                       email: Optional[str] = None, password: Optional[str] = None,
+                       username: Optional[str] = None, birth_date: Optional[Dict] = None) -> Optional[Dict]:
         """
         Create a new TikTok account.
         
@@ -240,12 +241,17 @@ class AccountCreator:
             use_proxy: Whether to use a proxy for this account
             email: Custom email (or None to generate)
             password: Custom password (or None to generate)
+            username: Custom username (optional)
+            birth_date: Birth date dict with 'month', 'day', 'year' keys
         
         Returns:
             Account data dictionary or None
         """
         try:
             logger.info("Starting TikTok account creation...")
+            
+            # Import the signup function from tiktok module
+            from social_media.tiktok import signup
             
             # Get or generate email
             if not email and self.email_generator:
@@ -258,28 +264,42 @@ class AccountCreator:
             if not password:
                 password = self._generate_password()
             
+            # Generate username if not provided
+            if not username:
+                username = self._generate_username()
+            
             # Get proxy if requested
             proxy = None
             if use_proxy and self.proxy_manager:
                 proxy = self.proxy_manager.get_proxy()
             
-            # Create account (this would need actual TikTok signup automation)
-            # Note: TikTok signup requires email/phone verification, captcha, etc.
-            # This is a placeholder for the actual implementation
-            account_data = {
-                'email': email,
-                'password': password,
-                'proxy': proxy,
-                'username': self._generate_username(),
-                'status': 'created',  # Needs verification
-                'created_at': datetime.now().isoformat(),
-                'cookies': {}
-            }
+            # Set default birth date if not provided (over 18)
+            if not birth_date:
+                birth_date = {'month': '1', 'day': '15', 'year': '1995'}
             
-            # Save account
-            if self.account_manager.add_account(account_data):
-                logger.info(f"Account created successfully: {email}")
-                return account_data
+            # Get email provider for verification (if available)
+            email_provider = self.email_generator if hasattr(self.email_generator, 'generator') else None
+            if email_provider and hasattr(email_provider, 'generator'):
+                email_provider = email_provider.generator
+            
+            # Call the real TikTok signup function
+            account_data = signup(
+                driver=driver,
+                email=email,
+                password=password,
+                username=username,
+                birth_date=birth_date,
+                email_provider=email_provider
+            )
+            
+            if account_data:
+                # Add proxy info
+                account_data['proxy'] = proxy
+                
+                # Save account
+                if self.account_manager.add_account(account_data):
+                    logger.info(f"Account created successfully: {email}")
+                    return account_data
             
             return None
             
