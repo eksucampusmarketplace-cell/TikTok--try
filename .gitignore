@@ -46,6 +46,8 @@ my_video.mp4
 accounts.json
 proxies.json
 emails.txt
+tasks.json
+scheduled_tasks.json
 
 # Logs
 *.log
