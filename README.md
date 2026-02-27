@@ -2,9 +2,10 @@
 
 A powerful **TikTok Automation Bot** that automates various tasks such as logging in, posting comments, following users, and uploading videos. It's designed to help streamline interaction with TikTok using Python and Selenium.
 
-> **📚 Documentation**: 
+> **📚 Documentation**:
 > - [Quick Start Guide](QUICKSTART.md) - Get running in 5 minutes
 > - [Usage Examples](USAGE_EXAMPLES.md) - Detailed code examples
+> - [Multi-Account Guide](MULTI_ACCOUNT_GUIDE.md) - Multi-account features
 > - [Upgrade Notes](UPGRADE_NOTES.md) - Migrating from v1.0.0
 
 > **⚠️ Important Notice:** TikTok frequently updates their website structure, which may break automation scripts. This project uses multiple selector strategies and error handling to improve reliability, but some features may require adjustments over time.
@@ -16,6 +17,11 @@ A powerful **TikTok Automation Bot** that automates various tasks such as loggin
 - **Following Users**: Follows specified TikTok users automatically
 - **Video Uploading**: Automates the upload of videos from local storage to TikTok
 - **Interactive Mode**: Choose which tasks to run interactively
+- **Multi-Account Support**: Manage and operate multiple TikTok accounts simultaneously
+- **Account Creation**: Automated account creation with email generation and proxy support
+- **Proxy Management**: Full proxy support with rotation strategies for anonymity
+- **Batch Operations**: Execute tasks across multiple accounts in parallel
+- **Email Generation**: Multiple strategies for generating email addresses
 - **Logging**: Comprehensive logging to track bot activities and debug issues
 - **Error Handling**: Robust error handling with multiple selector strategies
 - **Configuration**: Centralized configuration file for easy customization
@@ -168,15 +174,26 @@ set TIKTOK_PASSWORD=yourpassword
 
 ```
 tiktok-automation-bot/
-├── main.py              # Main entry point
-├── config.py            # Configuration settings
-├── requirements.txt     # Python dependencies
-├── .gitignore          # Git ignore rules
-├── README.md           # This file
+├── main.py                      # Main entry point with multi-account support
+├── config.py                    # Configuration settings
+├── requirements.txt             # Python dependencies
+├── .gitignore                   # Git ignore rules
+├── README.md                    # This file
 ├── social_media/
-│   └── tiktok.py       # Core TikTok automation functions
-├── bot.log             # Bot activity logs (generated)
-└── report.txt          # Task reports (generated)
+│   ├── __init__.py              # Package initialization
+│   └── tiktok.py                # Core TikTok automation functions
+├── account_manager.py            # Multi-account management
+├── proxy_manager.py             # Proxy management
+├── email_generator.py           # Email generation for accounts
+├── multi_account_bot.py         # Multi-account bot execution
+├── test_setup.py                # Setup validation script
+├── accounts.example.json        # Example accounts file
+├── proxies.example.json         # Example proxies file
+├── emails.example.txt           # Example emails list
+├── bot.log                      # Bot activity logs (generated)
+├── accounts.json                # Account storage (generated)
+├── proxies.json                 # Proxy storage (generated)
+└── report.txt                   # Task reports (generated)
 ```
 
 ## Logging
@@ -251,12 +268,14 @@ The bot will pause and prompt you to complete these steps manually.
 ## Future Enhancements
 
 - Add support for more social media platforms (Instagram, YouTube)
-- Multi-account support
 - Scheduling features for timed automation
 - Sentiment analysis of comments
 - Advanced error recovery
 - GUI interface for easier use
 - Docker containerization
+- Web-based dashboard for monitoring multiple accounts
+- Automated captcha solving integration
+- Advanced analytics and reporting
 
 ## Contributing
 

@@ -2,6 +2,107 @@
 
 All notable changes to the TikTok Automation Bot project will be documented in this file.
 
+## [2.1.0] - 2024-02-27
+
+### Added - Multi-Account Support 🎉
+
+- **Account Management System** (`account_manager.py`)
+  - Create, read, update, delete accounts
+  - Import/export accounts from JSON or CSV
+  - Account status management (active/disabled)
+  - Cookie storage per account
+  - Account metadata (created_at, last_used)
+
+- **Proxy Manager** (`proxy_manager.py`)
+  - Add proxies manually or from file
+  - Multiple proxy rotation strategies (round_robin, random, least_used)
+  - Proxy validation/testing
+  - Support for authenticated proxies
+  - Proxy usage tracking (success/failure counts)
+  - Import/export proxies from JSON or TXT
+
+- **Email Generator** (`email_generator.py`)
+  - Random email generation with multiple domains
+  - Custom email list support
+  - Temporary email service integration (framework)
+  - Email validation utilities
+
+- **Multi-Account Bot Manager** (`multi_account_bot.py`)
+  - Execute tasks across multiple accounts simultaneously
+  - Thread pool for parallel execution
+  - Account-specific bot instances
+  - Batch comment with multiple accounts
+  - Batch follow with multiple accounts
+  - Account rotation for repeated tasks
+  - Configurable concurrent bot limit
+
+- **Account Creation Wizard**
+  - Automated account data structure creation
+  - Email and password generation
+  - Proxy assignment
+  - Interactive wizard in menu
+  - Bulk account creation support
+
+- **Interactive Multi-Account Menu**
+  - View all accounts with status
+  - Add/delete/import accounts
+  - Enable/disable accounts
+  - Execute tasks on all accounts
+  - Batch comment operations
+  - Batch follow operations
+  - Account creation wizard
+  - Proxy management sub-menu
+
+- **Enhanced Configuration** (`config.py`)
+  - Multi-account settings
+  - Account creation settings
+  - Proxy settings with rotation strategies
+  - Email generation configuration
+  - Concurrent bot limits
+
+### New Files
+
+- `account_manager.py` - Account management system (12,400 bytes)
+- `proxy_manager.py` - Proxy management system (12,274 bytes)
+- `email_generator.py` - Email generation utilities (8,822 bytes)
+- `multi_account_bot.py` - Multi-account execution engine (15,952 bytes)
+- `MULTI_ACCOUNT_GUIDE.md` - Comprehensive multi-account documentation (14,980 bytes)
+- `accounts.example.json` - Example accounts file (724 bytes)
+- `proxies.example.json` - Example proxies file (817 bytes)
+- `emails.example.txt` - Example email list (322 bytes)
+
+### Modified Files
+
+- `main.py` - Added multi-account menu, imports, and functionality
+- `config.py` - Added multi-account, proxy, and email settings
+- `requirements.txt` - Added requests>=2.31.0
+- `.gitignore` - Added accounts.json, proxies.json, emails.txt
+- `README.md` - Updated features and documentation links
+
+### Documentation
+
+- **MULTI_ACCOUNT_GUIDE.md** - Complete guide for multi-account features
+  - Account management
+  - Proxy management
+  - Email generation
+  - Account creation
+  - Multi-account operations
+  - Configuration
+  - Best practices
+  - Troubleshooting
+  - API reference
+
+### Breaking Changes
+
+None - all changes are additions and backward compatible.
+
+### Notes
+
+- Account creation generates data structures but requires manual verification (email/phone, captcha)
+- Proxy support requires quality proxies for best results
+- Start with small numbers of accounts and increase gradually
+- Monitor account health and disable flagged accounts
+
 ## [2.0.0] - 2024-02-27
 
 ### Added

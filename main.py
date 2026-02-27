@@ -6,16 +6,23 @@ This bot automates various TikTok tasks including:
 - Commenting on user videos
 - Following users
 - Video uploading
+- Multi-account management
+- Account creation with proxy support
 """
 import time
 import os
 import sys
+import random
 import logging
 from seleniumbase import Driver
 
 # Import configuration and bot modules
 import config
 from social_media import tiktok
+from account_manager import AccountManager, AccountCreator
+from proxy_manager import ProxyManager
+from email_generator import EmailGenerator
+from multi_account_bot import MultiAccountBotManager
 
 # Configure logging
 logging.basicConfig(
@@ -173,6 +180,365 @@ def run_bot():
             pass
 
 
+def multi_account_menu():
+    """
+    Display multi-account management menu.
+    """
+    while True:
+        print("\n" + "=" * 60)
+        print("Multi-Account Management")
+        print("=" * 60)
+        print("1. View all accounts")
+        print("2. Add new account")
+        print("3. Import accounts from file")
+        print("4. Delete account")
+        print("5. Enable/Disable account")
+        print("6. Execute task on all accounts")
+        print("7. Batch comment with multiple accounts")
+        print("8. Batch follow with multiple accounts")
+        print("9. Account creation wizard")
+        print("10. Proxy management")
+        print("11. Back to main menu")
+        print("-" * 60)
+        
+        choice = input("\nSelect an option (1-11): ").strip()
+        
+        account_manager = AccountManager(config.ACCOUNTS_FILE)
+        
+        if choice == "1":
+            # View all accounts
+            print("\n" + "-" * 60)
+            print("All Accounts:")
+            print("-" * 60)
+            accounts = account_manager.get_all_accounts()
+            
+            if not accounts:
+                print("No accounts found.")
+            else:
+                for i, account in enumerate(accounts, 1):
+                    status = account.get('status', 'unknown')
+                    print(f"{i}. {account.get('email')} - Status: {status}")
+                    if account.get('proxy'):
+                        print(f"   Proxy: {account['proxy']['host']}:{account['proxy']['port']}")
+                    print()
+        
+        elif choice == "2":
+            # Add new account
+            print("\n" + "-" * 60)
+            print("Add New Account")
+            print("-" * 60)
+            
+            email = input("Email: ").strip()
+            password = input("Password: ").strip()
+            username = input("Username (optional): ").strip()
+            
+            account_data = {
+                'email': email,
+                'password': password,
+                'username': username if username else None
+            }
+            
+            # Ask about proxy
+            use_proxy = input("Use proxy? (y/n): ").strip().lower()
+            if use_proxy == 'y':
+                proxy_host = input("Proxy host: ").strip()
+                proxy_port = input("Proxy port: ").strip()
+                proxy_protocol = input("Proxy protocol (http/https): ").strip() or "http"
+                
+                account_data['proxy'] = {
+                    'host': proxy_host,
+                    'port': int(proxy_port),
+                    'protocol': proxy_protocol
+                }
+            
+            if account_manager.add_account(account_data):
+                print(f"\n✓ Account added successfully: {email}")
+            else:
+                print(f"\n✗ Failed to add account: {email}")
+        
+        elif choice == "3":
+            # Import accounts from file
+            filepath = input("Enter file path (JSON or TXT): ").strip()
+            if os.path.exists(filepath):
+                count = account_manager.import_accounts(filepath)
+                print(f"\n✓ Imported {count} accounts")
+            else:
+                print(f"\n✗ File not found: {filepath}")
+        
+        elif choice == "4":
+            # Delete account
+            email = input("Enter account email to delete: ").strip()
+            if account_manager.delete_account(email):
+                print(f"\n✓ Account deleted: {email}")
+            else:
+                print(f"\n✗ Failed to delete account: {email}")
+        
+        elif choice == "5":
+            # Enable/Disable account
+            email = input("Enter account email: ").strip()
+            action = input("Enable or disable? (e/d): ").strip().lower()
+            
+            if action == 'e':
+                if account_manager.enable_account(email):
+                    print(f"\n✓ Account enabled: {email}")
+                else:
+                    print(f"\n✗ Failed to enable account")
+            elif action == 'd':
+                if account_manager.disable_account(email):
+                    print(f"\n✓ Account disabled: {email}")
+                else:
+                    print(f"\n✗ Failed to disable account")
+            else:
+                print("\n✗ Invalid option")
+        
+        elif choice == "6":
+            # Execute task on all accounts
+            print("\n" + "-" * 60)
+            print("Execute Task on All Accounts")
+            print("-" * 60)
+            print("Available tasks:")
+            print("1. Comment on user videos")
+            print("2. Follow user")
+            
+            task_choice = input("Select task (1-2): ").strip()
+            
+            if task_choice == "1":
+                user = input("Enter username to comment on: ").strip()
+                count = int(input("Comments per account: ").strip())
+                
+                # Initialize multi-account manager
+                proxy_manager = ProxyManager(config.PROXIES_FILE) if config.USE_PROXIES else None
+                multi_bot = MultiAccountBotManager(account_manager, proxy_manager, config.MAX_CONCURRENT_BOTS)
+                
+                results = multi_bot.batch_comment(user, config.COMMENTS, count)
+                
+                successful = sum(1 for r in results.values() if r)
+                print(f"\n✓ Completed: {successful}/{len(results)} accounts")
+                
+            elif task_choice == "2":
+                users_input = input("Enter usernames (comma-separated): ").strip()
+                users = [u.strip() for u in users_input.split(',')]
+                
+                proxy_manager = ProxyManager(config.PROXIES_FILE) if config.USE_PROXIES else None
+                multi_bot = MultiAccountBotManager(account_manager, proxy_manager, config.MAX_CONCURRENT_BOTS)
+                
+                results = multi_bot.batch_follow(users)
+                
+                print(f"\n✓ Batch follow completed")
+            else:
+                print("\n✗ Invalid task selection")
+        
+        elif choice == "7":
+            # Batch comment
+            user = input("Enter username to comment on: ").strip()
+            count = int(input("Comments per account: ").strip())
+            
+            proxy_manager = ProxyManager(config.PROXIES_FILE) if config.USE_PROXIES else None
+            multi_bot = MultiAccountBotManager(account_manager, proxy_manager, config.MAX_CONCURRENT_BOTS)
+            
+            print(f"\nExecuting batch comment with {account_manager.get_account_count(status='active')} accounts...")
+            results = multi_bot.batch_comment(user, config.COMMENTS, count)
+            
+            successful = sum(1 for r in results.values() if r)
+            print(f"\n✓ Completed: {successful}/{len(results)} accounts")
+        
+        elif choice == "8":
+            # Batch follow
+            users_input = input("Enter usernames (comma-separated): ").strip()
+            users = [u.strip() for u in users_input.split(',')]
+            
+            proxy_manager = ProxyManager(config.PROXIES_FILE) if config.USE_PROXIES else None
+            multi_bot = MultiAccountBotManager(account_manager, proxy_manager, config.MAX_CONCURRENT_BOTS)
+            
+            print(f"\nExecuting batch follow with {account_manager.get_account_count(status='active')} accounts...")
+            results = multi_bot.batch_follow(users)
+            
+            print(f"\n✓ Batch follow completed")
+        
+        elif choice == "9":
+            # Account creation wizard
+            account_creation_wizard(account_manager)
+        
+        elif choice == "10":
+            # Proxy management
+            proxy_management_menu()
+        
+        elif choice == "11":
+            # Back to main menu
+            break
+        else:
+            print("\n✗ Invalid choice")
+
+
+def account_creation_wizard(account_manager: AccountManager):
+    """
+    Account creation wizard.
+    """
+    print("\n" + "=" * 60)
+    print("Account Creation Wizard")
+    print("=" * 60)
+    
+    # Initialize managers
+    proxy_manager = ProxyManager(config.PROXIES_FILE) if config.USE_PROXIES else None
+    email_generator = EmailGenerator(
+        strategy=config.EMAIL_GENERATION_STRATEGY,
+        domains=config.EMAIL_DOMAINS,
+        emails_file=config.CUSTOM_EMAILS_FILE
+    )
+    
+    account_creator = AccountCreator(account_manager, proxy_manager, email_generator)
+    
+    print("\nAccount creation will:")
+    print("- Generate new email addresses")
+    print("- Generate secure passwords")
+    print("- Assign proxies (if enabled)")
+    print("- Create TikTok accounts")
+    print("\n⚠️ Note: Actual TikTok account creation requires manual verification")
+    print("   (email/phone verification, captcha, etc.)")
+    print("   This will create the account data structure for you.")
+    
+    confirm = input("\nProceed? (y/n): ").strip().lower()
+    
+    if confirm != 'y':
+        print("\n✗ Account creation cancelled")
+        return
+    
+    count = int(input(f"How many accounts to create? (default: {config.ACCOUNTS_TO_CREATE}): ").strip() or str(config.ACCOUNTS_TO_CREATE))
+    
+    print(f"\nCreating {count} accounts...")
+    
+    # Create driver for account creation
+    try:
+        driver = initialize_driver()
+        
+        for i in range(count):
+            print(f"\n[{i+1}/{count}] Creating account...")
+            
+            account = account_creator.create_account(driver, use_proxy=config.USE_PROXIES)
+            
+            if account:
+                print(f"✓ Created: {account['email']}")
+                print(f"  Password: {account['password']}")
+                print(f"  Proxy: {account.get('proxy', 'None')}")
+            else:
+                print(f"✗ Failed to create account")
+            
+            # Delay between account creations
+            if i < count - 1:
+                delay = random.uniform(5, 15)
+                print(f"  Waiting {delay:.1f}s before next account...")
+                time.sleep(delay)
+        
+        driver.quit()
+        
+    except Exception as e:
+        logger.error(f"Error during account creation: {e}")
+        print(f"\n✗ Error: {e}")
+
+
+def proxy_management_menu():
+    """
+    Proxy management menu.
+    """
+    print("\n" + "=" * 60)
+    print("Proxy Management")
+    print("=" * 60)
+    
+    proxy_manager = ProxyManager(config.PROXIES_FILE)
+    
+    while True:
+        print("\nOptions:")
+        print("1. View all proxies")
+        print("2. Add proxy")
+        print("3. Import proxies from file")
+        print("4. Delete proxy")
+        print("5. Check proxy")
+        print("6. Back")
+        print("-" * 60)
+        
+        choice = input("\nSelect an option (1-6): ").strip()
+        
+        if choice == "1":
+            # View all proxies
+            print("\n" + "-" * 60)
+            print("All Proxies:")
+            print("-" * 60)
+            proxies = proxy_manager.get_all_proxies()
+            
+            if not proxies:
+                print("No proxies found.")
+            else:
+                for i, proxy in enumerate(proxies, 1):
+                    status = proxy.get('status', 'unknown')
+                    print(f"{i}. {proxy['host']}:{proxy['port']} ({proxy['protocol']}) - Status: {status}")
+                    if proxy.get('username'):
+                        print(f"   Auth: {proxy['username']}:****")
+                    print()
+        
+        elif choice == "2":
+            # Add proxy
+            print("\n" + "-" * 60)
+            print("Add Proxy")
+            print("-" * 60)
+            
+            host = input("Proxy host: ").strip()
+            port = input("Proxy port: ").strip()
+            protocol = input("Protocol (http/https): ").strip() or "http"
+            username = input("Username (optional): ").strip()
+            password = input("Password (optional): ").strip()
+            
+            proxy_data = {
+                'host': host,
+                'port': int(port),
+                'protocol': protocol
+            }
+            
+            if username and password:
+                proxy_data['username'] = username
+                proxy_data['password'] = password
+            
+            if proxy_manager.add_proxy(proxy_data):
+                print(f"\n✓ Proxy added: {host}:{port}")
+            else:
+                print(f"\n✗ Failed to add proxy")
+        
+        elif choice == "3":
+            # Import proxies
+            filepath = input("Enter file path: ").strip()
+            if os.path.exists(filepath):
+                count = proxy_manager.import_proxies(filepath)
+                print(f"\n✓ Imported {count} proxies")
+            else:
+                print(f"\n✗ File not found: {filepath}")
+        
+        elif choice == "4":
+            # Delete proxy
+            proxy_str = input("Enter proxy (host:port): ").strip()
+            if proxy_manager.delete_proxy(proxy_str):
+                print(f"\n✓ Proxy deleted: {proxy_str}")
+            else:
+                print(f"\n✗ Failed to delete proxy")
+        
+        elif choice == "5":
+            # Check proxy
+            proxy_str = input("Enter proxy (host:port): ").strip()
+            proxy_data = proxy_manager.get_proxy()
+            
+            if proxy_data:
+                if proxy_manager.check_proxy(proxy_data):
+                    print(f"\n✓ Proxy is working")
+                else:
+                    print(f"\n✗ Proxy is not working")
+            else:
+                print(f"\n✗ No proxies available")
+        
+        elif choice == "6":
+            # Back
+            break
+        else:
+            print("\n✗ Invalid choice")
+
+
 def interactive_mode():
     """
     Run the bot in interactive mode, allowing user to choose tasks.
@@ -208,10 +574,11 @@ def interactive_mode():
             print("2. Follow a user")
             print("3. Upload a video")
             print("4. Run all default tasks")
-            print("5. Exit")
+            print("5. Multi-Account Management")
+            print("6. Exit")
             print("-" * 60)
             
-            choice = input("\nSelect a task (1-5): ").strip()
+            choice = input("\nSelect a task (1-6): ").strip()
             
             if choice == "1":
                 # Comment task
@@ -267,6 +634,10 @@ def interactive_mode():
                 print("\nAll tasks completed!")
             
             elif choice == "5":
+                # Multi-Account Management
+                multi_account_menu()
+            
+            elif choice == "6":
                 # Exit
                 print("\nExiting...")
                 break

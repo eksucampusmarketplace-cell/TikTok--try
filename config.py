@@ -43,6 +43,25 @@ DEFAULT_VIDEO_CAPTION = "Check out this cool video! #tiktok #viral"
 LOG_FILE = "bot.log"
 REPORT_FILE = "report.txt"
 
+# Multi-Account Settings
+MULTI_ACCOUNT_ENABLED = False
+ACCOUNTS_FILE = "accounts.json"
+MAX_CONCURRENT_BOTS = 3
+
+# Account Creation Settings
+AUTO_CREATE_ACCOUNTS = False
+ACCOUNTS_TO_CREATE = 5
+
+# Proxy Settings
+USE_PROXIES = False
+PROXIES_FILE = "proxies.json"
+PROXY_ROTATION_STRATEGY = "round_robin"  # Options: "round_robin", "random", "least_used"
+
+# Email Generation Settings
+EMAIL_GENERATION_STRATEGY = "random"  # Options: "random", "temp", "custom"
+CUSTOM_EMAILS_FILE = "emails.txt"
+EMAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com"]
+
 # TikTok URLs
 TIKTOK_BASE_URL = "https://www.tiktok.com"
 TIKTOK_LOGIN_URL = f"{TIKTOK_BASE_URL}/login/phone-or-email/email"

@@ -1,0 +1,36 @@
+[
+  {
+    "host": "proxy1.example.com",
+    "port": 8080,
+    "protocol": "http",
+    "status": "active",
+    "added_at": "2024-02-27T10:00:00",
+    "last_checked": "2024-02-27T12:00:00",
+    "success_count": 50,
+    "failure_count": 2
+  },
+  {
+    "host": "proxy2.example.com",
+    "port": 3128,
+    "protocol": "http",
+    "username": "user123",
+    "password": "pass123",
+    "status": "active",
+    "added_at": "2024-02-27T11:00:00",
+    "last_checked": null,
+    "success_count": 30,
+    "failure_count": 0
+  },
+  {
+    "host": "proxy3.example.com",
+    "port": 1080,
+    "protocol": "socks5",
+    "username": "socksuser",
+    "password": "sockspass",
+    "status": "active",
+    "added_at": "2024-02-27T12:00:00",
+    "last_checked": "2024-02-27T13:00:00",
+    "success_count": 25,
+    "failure_count": 5
+  }
+]
