@@ -36,9 +36,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def initialize_driver():
+def initialize_driver(proxy_data=None, fingerprint=None):
     """
-    Initialize and return the Selenium WebDriver.
+    Initialize and return the Selenium WebDriver with optional proxy and fingerprint.
+    
+    Args:
+        proxy_data: Optional proxy configuration dict
+        fingerprint: Optional device fingerprint dict
     
     Returns:
         WebDriver: Configured Selenium driver instance
@@ -51,13 +55,44 @@ def initialize_driver():
             'headless': config.HEADLESS,
         }
         
+        # Add proxy configuration if provided
+        if proxy_data:
+            host = proxy_data.get('host')
+            port = proxy_data.get('port')
+            username = proxy_data.get('username')
+            password = proxy_data.get('password')
+            
+            if username and password:
+                proxy_string = f"{username}:{password}@{host}:{port}"
+            else:
+                proxy_string = f"{host}:{port}"
+            
+            driver_args['proxy_string'] = proxy_string
+            logger.info(f"Configured proxy: {host}:{port}")
+        
+        # Add fingerprint user agent if provided
+        if fingerprint and fingerprint.get('user_agent'):
+            driver_args['user_agent'] = fingerprint['user_agent']
+            logger.info(f"Using custom user agent")
+        
         # Use undetected-chromedriver mode if configured
         if config.BROWSER_MODE == "uc":
             driver_args['uc'] = True
             logger.info("Using undetected-chromedriver mode")
         
+        # Add anti-detection arguments
+        driver_args['incognito'] = True
+        driver_args['disable_gpu'] = True
+        driver_args['no_sandbox'] = True
+        driver_args['disable_dev_shm_usage'] = True
+        
         driver = Driver(**driver_args)
         driver.maximize_window()
+        
+        # Apply additional fingerprint masking via JavaScript
+        if fingerprint:
+            from social_media.tiktok import apply_fingerprint
+            apply_fingerprint(driver, fingerprint)
         
         logger.info("WebDriver initialized successfully")
         return driver

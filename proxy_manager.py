@@ -350,3 +350,93 @@ class ProxyManager:
     def get_proxy_count(self, status: Optional[str] = None) -> int:
         """Get count of proxies, optionally filtered by status."""
         return len(self.get_all_proxies(status))
+    
+    def fetch_free_proxies(self, timeout: int = 10) -> int:
+        """
+        Fetch free proxies from public sources.
+        
+        Returns:
+            Number of proxies fetched
+        """
+        import requests
+        
+        fetched = 0
+        sources = [
+            # Free proxy list sources
+            "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+            "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
+            "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/proxy.txt",
+        ]
+        
+        logger.info("Fetching free proxies from public sources...")
+        
+        for source in sources:
+            try:
+                response = requests.get(source, timeout=timeout)
+                if response.status_code == 200:
+                    lines = response.text.strip().split('\n')
+                    for line in lines:
+                        line = line.strip()
+                        if ':' in line and not line.startswith('#'):
+                            if self.add_proxy_from_string(line):
+                                fetched += 1
+                    logger.info(f"Fetched {fetched} proxies from {source}")
+            except Exception as e:
+                logger.warning(f"Failed to fetch from {source}: {e}")
+        
+        logger.info(f"Total free proxies fetched: {fetched}")
+        return fetched
+    
+    def get_working_proxies(self, max_check: int = 10, timeout: int = 5) -> List[Dict]:
+        """
+        Get list of working proxies by testing them.
+        
+        Args:
+            max_check: Maximum number of proxies to check
+            timeout: Timeout for each proxy check
+        
+        Returns:
+            List of working proxy dictionaries
+        """
+        import requests
+        import concurrent.futures
+        
+        working = []
+        proxies_to_check = self.get_all_proxies('active')[:max_check]
+        
+        def test_proxy(proxy_data):
+            try:
+                protocol = proxy_data.get('protocol', 'http')
+                host = proxy_data.get('host')
+                port = proxy_data.get('port')
+                username = proxy_data.get('username')
+                password = proxy_data.get('password')
+                
+                if username and password:
+                    proxy_url = f"{protocol}://{username}:{password}@{host}:{port}"
+                else:
+                    proxy_url = f"{protocol}://{host}:{port}"
+                
+                response = requests.get(
+                    'http://httpbin.org/ip',
+                    proxies={'http': proxy_url, 'https': proxy_url},
+                    timeout=timeout
+                )
+                
+                if response.status_code == 200:
+                    return proxy_data
+            except:
+                pass
+            return None
+        
+        logger.info(f"Testing {len(proxies_to_check)} proxies...")
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            results = executor.map(test_proxy, proxies_to_check)
+            
+            for result in results:
+                if result:
+                    working.append(result)
+        
+        logger.info(f"Found {len(working)} working proxies")
+        return working
