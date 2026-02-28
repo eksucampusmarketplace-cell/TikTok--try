@@ -804,48 +804,84 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
         
         # Switch to email tab if needed
         try:
-            email_tab = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, '//div[contains(text(), "Email") or @data-e2e="email-tab"]'))
-            )
-            email_tab.click()
-            logger.info("Switched to email tab")
-            time.sleep(1)
+            email_tab_selectors = [
+                (By.XPATH, '//div[contains(text(), "Email")]'),
+                (By.XPATH, '//span[contains(text(), "Email")]'),
+                (By.XPATH, '//div[@data-e2e="email-tab"]'),
+                (By.CSS_SELECTOR, '[data-e2e="email-tab"]'),
+                (By.XPATH, '//button[contains(@class, "email")]'),
+            ]
+            email_tab = bot.find_element_multiple_selectors(email_tab_selectors, timeout=3)
+            if email_tab:
+                email_tab.click()
+                logger.info("Switched to email tab")
+                time.sleep(1)
         except:
             logger.info("Email tab not needed or already selected")
-        
+
         # Fill in birth date if required
         if birth_date:
             try:
-                # Month dropdown
-                month_dropdown = driver.find_element(By.XPATH, '//select[contains(@name, "month") or @data-e2e="month"]')
-                month_dropdown.click()
-                month_option = driver.find_element(By.XPATH, f'//option[@value="{birth_date["month"]}"]')
-                month_option.click()
-                time.sleep(0.5)
-                
+                # Try multiple selectors for month dropdown
+                month_selectors = [
+                    (By.CSS_SELECTOR, 'select[name="month"]'),
+                    (By.XPATH, '//select[@name="month"]'),
+                    (By.CSS_SELECTOR, '[data-e2e="month"] select'),
+                    (By.XPATH, '//*[contains(@data-e2e, "month")]//select'),
+                ]
+                month_dropdown = bot.find_element_multiple_selectors(month_selectors, timeout=3)
+                if month_dropdown:
+                    month_dropdown.click()
+                    time.sleep(0.3)
+                    month_option = driver.find_element(By.XPATH, f'//option[@value="{birth_date["month"]}"]')
+                    month_option.click()
+                    time.sleep(0.3)
+
                 # Day dropdown
-                day_dropdown = driver.find_element(By.XPATH, '//select[contains(@name, "day") or @data-e2e="day"]')
-                day_dropdown.click()
-                day_option = driver.find_element(By.XPATH, f'//option[@value="{birth_date["day"]}"]')
-                day_option.click()
-                time.sleep(0.5)
-                
+                day_selectors = [
+                    (By.CSS_SELECTOR, 'select[name="day"]'),
+                    (By.XPATH, '//select[@name="day"]'),
+                    (By.CSS_SELECTOR, '[data-e2e="day"] select'),
+                    (By.XPATH, '//*[contains(@data-e2e, "day")]//select'),
+                ]
+                day_dropdown = bot.find_element_multiple_selectors(day_selectors, timeout=3)
+                if day_dropdown:
+                    day_dropdown.click()
+                    time.sleep(0.3)
+                    day_option = driver.find_element(By.XPATH, f'//option[@value="{birth_date["day"]}"]')
+                    day_option.click()
+                    time.sleep(0.3)
+
                 # Year dropdown
-                year_dropdown = driver.find_element(By.XPATH, '//select[contains(@name, "year") or @data-e2e="year"]')
-                year_dropdown.click()
-                year_option = driver.find_element(By.XPATH, f'//option[@value="{birth_date["year"]}"]')
-                year_option.click()
-                time.sleep(0.5)
-                
+                year_selectors = [
+                    (By.CSS_SELECTOR, 'select[name="year"]'),
+                    (By.XPATH, '//select[@name="year"]'),
+                    (By.CSS_SELECTOR, '[data-e2e="year"] select'),
+                    (By.XPATH, '//*[contains(@data-e2e, "year")]//select'),
+                ]
+                year_dropdown = bot.find_element_multiple_selectors(year_selectors, timeout=3)
+                if year_dropdown:
+                    year_dropdown.click()
+                    time.sleep(0.3)
+                    year_option = driver.find_element(By.XPATH, f'//option[@value="{birth_date["year"]}"]')
+                    year_option.click()
+                    time.sleep(0.3)
+
                 logger.info("Entered birth date")
-                
+
                 # Click next/continue after birth date
-                try:
-                    next_btn = driver.find_element(By.XPATH, '//button[contains(text(), "Next") or contains(text(), "Continue")]')
+                next_selectors = [
+                    (By.XPATH, '//button[contains(text(), "Next")]'),
+                    (By.XPATH, '//button[contains(text(), "Continue")]'),
+                    (By.CSS_SELECTOR, 'button[type="submit"]'),
+                    (By.XPATH, '//button[@type="submit"]'),
+                ]
+                next_btn = bot.find_element_multiple_selectors(next_selectors, timeout=3)
+                if next_btn:
                     next_btn.click()
                     time.sleep(2)
-                except:
-                    pass
+            except Exception as e:
+                logger.info(f"Birth date form not present or already passed: {e}")
                     
             except Exception as e:
                 logger.warning(f"Could not enter birth date: {e}")
@@ -891,15 +927,18 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
         
         # Enter email - try multiple selectors for different TikTok page versions
         email_selectors = [
-            (By.XPATH, '//input[@type="email"]'),
-            (By.XPATH, '//input[@name="email"]'),
-            (By.XPATH, '//input[contains(@placeholder, "email")]'),
-            (By.XPATH, '//input[@type="text"]'),
             (By.CSS_SELECTOR, 'input[type="email"]'),
+            (By.XPATH, '//input[@type="email"]'),
             (By.CSS_SELECTOR, 'input[name="email"]'),
+            (By.XPATH, '//input[@name="email"]'),
             (By.CSS_SELECTOR, 'input[placeholder*="email"]'),
+            (By.XPATH, '//input[contains(@placeholder, "email")]'),
+            (By.CSS_SELECTOR, 'input[placeholder*="Email"]'),
+            (By.XPATH, '//input[contains(@placeholder, "Email")]'),
+            (By.XPATH, '//input[@type="text"]'),
+            (By.XPATH, '//input[contains(@autocomplete, "email")]'),
         ]
-        
+
         email_input = bot.find_element_multiple_selectors(email_selectors, timeout=10)
         if email_input:
             email_input.clear()
@@ -909,6 +948,14 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
             logger.info(f"Entered email: {email}")
         else:
             logger.error("Could not find email input field")
+            # Try to find any input field
+            try:
+                all_inputs = driver.find_elements(By.TAG_NAME, 'input')
+                logger.info(f"Found {len(all_inputs)} input fields on page")
+                for i, inp in enumerate(all_inputs):
+                    logger.info(f"  Input {i}: type={inp.get_attribute('type')}, name={inp.get_attribute('name')}, placeholder={inp.get_attribute('placeholder')}")
+            except:
+                pass
             return None
         
         time.sleep(1)
@@ -996,20 +1043,35 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
         
         time.sleep(1)
         
-        # Enter username if field is present
-        if username:
-            username_selectors = [
-                (By.XPATH, '//input[@name="username"]'),
-                (By.XPATH, '//input[contains(@placeholder, "username")]'),
-            ]
-            
-            username_input = bot.find_element_multiple_selectors(username_selectors, timeout=5)
-            if username_input:
-                username_input.clear()
-                for char in username:
-                    username_input.send_keys(char)
-                    time.sleep(random.uniform(0.02, 0.05))
-                logger.info(f"Entered username: {username}")
+        # Enter username - always generate if not provided
+        if not username:
+            # Generate a username if not provided
+            import random
+            adjectives = ['cool', 'awesome', 'happy', 'lucky', 'smart', 'brave', 'creative', 'wild', 'epic', 'fierce', 'swift']
+            nouns = ['tiger', 'eagle', 'dolphin', 'wolf', 'bear', 'lion', 'fox', 'hawk', 'shark', 'panther', 'phoenix']
+            username = f"{random.choice(adjectives)}{random.choice(nouns)}{random.randint(100, 9999)}"
+            logger.info(f"Generated username: {username}")
+
+        username_selectors = [
+            (By.CSS_SELECTOR, 'input[name="username"]'),
+            (By.XPATH, '//input[@name="username"]'),
+            (By.CSS_SELECTOR, 'input[placeholder*="username"]'),
+            (By.XPATH, '//input[contains(@placeholder, "username")]'),
+            (By.CSS_SELECTOR, 'input[placeholder*="Username"]'),
+            (By.XPATH, '//input[contains(@placeholder, "Username")]'),
+            (By.CSS_SELECTOR, 'input[placeholder*="@"]'),
+            (By.XPATH, '//input[contains(@placeholder, "@")]'),
+        ]
+
+        username_input = bot.find_element_multiple_selectors(username_selectors, timeout=10)
+        if username_input:
+            username_input.clear()
+            for char in username:
+                username_input.send_keys(char)
+                time.sleep(random.uniform(0.02, 0.05))
+            logger.info(f"Entered username: {username}")
+        else:
+            logger.warning("Could not find username input field, may not be required yet")
         
         # Click sign up button
         signup_selectors = [

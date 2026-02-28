@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simple script to create a TikTok account using the account creation wizard
+Simple script to create a TikTok account using browser automation
 """
 import sys
 import time
@@ -31,7 +31,7 @@ def main():
     account_manager = AccountManager(config.ACCOUNTS_FILE)
     proxy_manager = ProxyManager(config.PROXIES_FILE) if config.USE_PROXIES else None
 
-    # Use random email strategy for simplicity
+    # Use random email strategy for testing
     email_generator = EmailGenerator(
         strategy='random',
         domains=config.EMAIL_DOMAINS,
@@ -41,30 +41,46 @@ def main():
     account_creator = AccountCreator(account_manager, proxy_manager, email_generator)
 
     print(f"\nAccount creation will:")
-    print(f"- Use random email strategy (for testing)")
-    print(f"- Generate secure passwords")
-    print(f"- Create account data structure")
-    print("\n⚠️ Note: This creates the account data structure.")
-    print("   Actual TikTok account creation requires manual verification.")
+    print(f"- Use browser automation to navigate TikTok signup")
+    print(f"- Generate email using random strategy")
+    print(f"- Generate secure password")
+    print(f"- Generate random username")
+    print(f"- Create actual TikTok account")
+    print(f"\nNote: You may need to complete captcha or email verification manually.")
 
-    # Create driver
+    # Create driver for account creation
     try:
         print("\nInitializing browser...")
         driver = initialize_driver()
 
-        # Create one account
-        print("\nCreating account...")
+        # Navigate to TikTok signup page
+        print("\nNavigating to TikTok signup...")
+        driver.get("https://www.tiktok.com/signup/phone-or-email/email")
+        time.sleep(3)
+
+        # Create one account with username
+        print("\nCreating account with username...")
         account = account_creator.create_account(driver, use_proxy=config.USE_PROXIES)
 
         if account:
             print(f"\n✓ Account created successfully!")
             print(f"  Email: {account['email']}")
             print(f"  Password: {account['password']}")
+            print(f"  Username: {account.get('username', 'N/A')}")
             if account.get('proxy'):
                 print(f"  Proxy: {account['proxy']['host']}:{account['proxy']['port']}")
             print(f"\nAccount saved to: {config.ACCOUNTS_FILE}")
+            print(f"\nNext steps:")
+            print(f"1. Check your email for verification code")
+            print(f"2. Complete any captcha if required")
+            print(f"3. Verify email when prompted")
         else:
             print(f"\n✗ Failed to create account")
+            print("Check bot.log for details")
+
+        # Wait a bit before closing
+        print("\nKeeping browser open for 10 seconds for manual intervention if needed...")
+        time.sleep(10)
 
         driver.quit()
 
