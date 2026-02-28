@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 
 # Configure logging
@@ -19,6 +20,207 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+
+def human_like_scroll(driver, scrolls=None):
+    """Perform human-like scrolling behavior."""
+    if scrolls is None:
+        scrolls = random.randint(1, 3)
+    
+    for _ in range(scrolls):
+        # Random scroll amount
+        scroll_amount = random.randint(200, 500)
+        driver.execute_script(f"window.scrollBy(0, {scroll_amount});")
+        time.sleep(random.uniform(0.5, 1.5))
+        
+        # Sometimes scroll back up a bit
+        if random.random() > 0.7:
+            driver.execute_script(f"window.scrollBy(0, -{random.randint(100, 200)});")
+            time.sleep(random.uniform(0.3, 0.8))
+
+
+def human_like_mouse_movement(driver, element=None):
+    """Simulate human-like mouse movements."""
+    try:
+        actions = ActionChains(driver)
+        
+        # Get viewport size
+        viewport_width = driver.execute_script("return window.innerWidth;")
+        viewport_height = driver.execute_script("return window.innerHeight;")
+        
+        # Move mouse in random patterns before reaching target
+        if element:
+            # Get element location
+            location = element.location
+            size = element.size
+            
+            target_x = location['x'] + size['width'] // 2
+            target_y = location['y'] + size['height'] // 2
+            
+            # Create random intermediate points
+            for _ in range(random.randint(3, 6)):
+                intermediate_x = random.randint(0, viewport_width)
+                intermediate_y = random.randint(0, viewport_height)
+                actions.move_by_offset(intermediate_x, intermediate_y)
+                actions.pause(random.uniform(0.1, 0.3))
+            
+            # Move to element
+            actions.move_to_element(element)
+        else:
+            # Random mouse movements
+            for _ in range(random.randint(5, 10)):
+                x = random.randint(0, viewport_width)
+                y = random.randint(0, viewport_height)
+                actions.move_by_offset(x, y)
+                actions.pause(random.uniform(0.05, 0.2))
+        
+        actions.perform()
+    except Exception as e:
+        logger.debug(f"Mouse movement error: {e}")
+
+
+def random_mouse_click(driver, element):
+    """Click an element with human-like behavior."""
+    try:
+        # Move mouse to element with human-like motion
+        human_like_mouse_movement(driver, element)
+        
+        # Small random delay
+        time.sleep(random.uniform(0.1, 0.3))
+        
+        # Click
+        element.click()
+        return True
+    except Exception as e:
+        logger.debug(f"Click error: {e}")
+        # Fallback to regular click
+        try:
+            element.click()
+            return True
+        except:
+            return False
+
+
+def check_and_solve_captcha(driver, max_attempts=3):
+    """
+    Detect and handle CAPTCHA challenges.
+    Returns True if CAPTCHA was detected and handled (or needs manual intervention).
+    """
+    captcha_detected = False
+    
+    # Check for various CAPTCHA indicators
+    captcha_selectors = [
+        (By.XPATH, '//iframe[contains(@src, "captcha")]'),
+        (By.XPATH, '//div[contains(@class, "captcha")]'),
+        (By.XPATH, '//img[contains(@alt, "captcha")]'),
+        (By.XPATH, '//input[@id="captcha"]'),
+        (By.XPATH, '//div[contains(text(), "验证")]'),  # Chinese verification
+        (By.XPATH, '//div[contains(text(), "Verify")]'),
+        (By.XPATH, '//div[contains(text(), "human")]'),
+        (By.XPATH, '//div[contains(@class, "verify")]'),
+        (By.XPATH, '//div[@data-e2e="captcha"]'),
+        (By.XPATH, '//svg[@aria-label="captcha"]'),
+    ]
+    
+    for selector in captcha_selectors:
+        try:
+            element = WebDriverWait(driver, 2).until(
+                EC.presence_of_element_located(selector)
+            )
+            if element:
+                captcha_detected = True
+                logger.warning("CAPTCHA detected!")
+                break
+        except:
+            continue
+    
+    if captcha_detected:
+        print("\n" + "="*60)
+        print("🤖 CAPTCHA DETECTED!")
+        print("="*60)
+        print("Please solve the CAPTCHA manually in the browser window.")
+        print("Press Enter after completing the CAPTCHA...")
+        print("="*60 + "\n")
+        
+        input("Press Enter after solving the CAPTCHA...")
+        time.sleep(2)
+        
+        # Check if CAPTCHA is still present
+        for selector in captcha_selectors:
+            try:
+                element = driver.find_element(*selector)
+                if element:
+                    logger.warning("CAPTCHA still present after manual intervention")
+                    if max_attempts > 1:
+                        return check_and_solve_captcha(driver, max_attempts - 1)
+            except:
+                pass
+        
+        logger.info("CAPTCHA appears to be resolved")
+        return True
+    
+    return False
+
+
+def simulate_human_typing(element, text, fast=False):
+    """Type text with human-like delays."""
+    element.clear()
+    
+    if fast:
+        # Faster typing for some fields
+        for char in text:
+            element.send_keys(char)
+            time.sleep(random.uniform(0.02, 0.05))
+    else:
+        # Human-like typing
+        for char in text:
+            element.send_keys(char)
+            # Random delay between keystrokes
+            time.sleep(random.uniform(0.05, 0.15))
+            
+            # Occasionally pause (like thinking)
+            if random.random() > 0.9:
+                time.sleep(random.uniform(0.1, 0.3))
+
+
+def random_jitter_mouse(driver):
+    """Add random mouse jitter to appear more human."""
+    try:
+        actions = ActionChains(driver)
+        for _ in range(random.randint(3, 8)):
+            x_offset = random.randint(-50, 50)
+            y_offset = random.randint(-50, 50)
+            actions.move_by_offset(x_offset, y_offset)
+            actions.pause(random.uniform(0.02, 0.08))
+        actions.perform()
+    except:
+        pass
+
+
+def check_for_blocks(driver):
+    """Check if TikTok has blocked or rate-limited the request."""
+    page_source = driver.page_source.lower()
+    block_indicators = [
+        'too many requests',
+        'rate limit',
+        'access denied',
+        'blocked',
+        'suspicious activity',
+        'try again later',
+        '暂时无法访问',  # Chinese - temporarily unavailable
+    ]
+    
+    for indicator in block_indicators:
+        if indicator in page_source:
+            logger.warning(f"Block detected: {indicator}")
+            return True
+    
+    return False
+
+
+def wait_random(min_time=1, max_time=3):
+    """Wait for a random amount of time."""
+    time.sleep(random.uniform(min_time, max_time))
 
 
 class TikTokBot:
@@ -738,7 +940,7 @@ def wait_for_verification_code(email_provider, email, timeout=180):
 
 
 def signup(driver, email, password, username=None, birth_date=None, email_provider=None, 
-           proxy_data=None, fingerprint=None):
+           proxy_data=None, fingerprint=None, use_enhanced_anti_bot=True):
     """
     Create a new TikTok account with anti-detection features.
     
@@ -751,6 +953,7 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
         email_provider: Optional email provider instance for verification
         proxy_data: Optional proxy configuration
         fingerprint: Optional device fingerprint
+        use_enhanced_anti_bot: Whether to use enhanced anti-bot measures
     
     Returns:
         dict: Account data if successful, None otherwise
@@ -768,39 +971,77 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
         # Apply fingerprint masking
         apply_fingerprint(driver, fingerprint)
         
-        # Navigate to TikTok signup page
+        # Navigate to TikTok signup page with human-like behavior
+        logger.info("Navigating to TikTok signup page...")
         driver.get("https://www.tiktok.com/signup")
-        time.sleep(5)
         
-        # Check if we need to accept cookies
+        # Random wait to let page load naturally
+        wait_random(3, 6)
+        
+        # Human-like scroll after page load
+        if use_enhanced_anti_bot:
+            human_like_scroll(driver, scrolls=1)
+        
+        # Check for blocks first
+        if check_for_blocks(driver):
+            logger.warning("TikTok is blocking requests. Try using a proxy or waiting.")
+            return None
+        
+        # Check for CAPTCHA before anything else
+        if use_enhanced_anti_bot:
+            check_and_solve_captcha(driver)
+        
+        # Check if we need to accept cookies - with human-like click
         try:
-            cookie_btn = WebDriverWait(driver, 5).until(
+            cookie_btn = WebDriverWait(driver, 8).until(
                 EC.element_to_be_clickable((By.XPATH, '//button[contains(text(), "Accept") or contains(text(), "Accept all")]'))
             )
-            cookie_btn.click()
+            if use_enhanced_anti_bot:
+                random_mouse_click(driver, cookie_btn)
+            else:
+                cookie_btn.click()
             logger.info("Accepted cookies")
-            time.sleep(1)
+            wait_random(1, 2)
         except:
-            pass
+            logger.info("No cookie popup found")
         
-        # Click on "Use phone or email" option
+        # Check for CAPTCHA after cookie acceptance
+        if use_enhanced_anti_bot:
+            check_and_solve_captcha(driver)
+        
+        # Random mouse movement to appear more human
+        if use_enhanced_anti_bot:
+            random_jitter_mouse(driver)
+            wait_random(0.5, 1.5)
+        
+        # Click on "Use phone or email" option - with human-like behavior
         try:
             phone_email_btn = WebDriverWait(driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, '//div[contains(text(), "Use phone or email") or contains(@data-e2e, "phone-email")]'))
             )
-            phone_email_btn.click()
+            if use_enhanced_anti_bot:
+                random_mouse_click(driver, phone_email_btn)
+            else:
+                phone_email_btn.click()
             logger.info("Selected phone/email signup")
-            time.sleep(2)
+            wait_random(2, 4)
         except TimeoutException:
             # Try alternative selectors
             try:
                 alt_btn = driver.find_element(By.XPATH, '//div[contains(@class, "channel-item") and contains(text(), "email")]')
-                alt_btn.click()
+                if use_enhanced_anti_bot:
+                    random_mouse_click(driver, alt_btn)
+                else:
+                    alt_btn.click()
                 logger.info("Selected email signup (alternative)")
-                time.sleep(2)
+                wait_random(2, 4)
             except:
                 logger.error("Could not find email signup option")
                 return None
+        
+        # Check for CAPTCHA after clicking signup option
+        if use_enhanced_anti_bot:
+            check_and_solve_captcha(driver)
         
         # Switch to email tab if needed
         try:
@@ -813,11 +1054,20 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
             ]
             email_tab = bot.find_element_multiple_selectors(email_tab_selectors, timeout=3)
             if email_tab:
-                email_tab.click()
+                if use_enhanced_anti_bot:
+                    random_mouse_click(driver, email_tab)
+                else:
+                    email_tab.click()
                 logger.info("Switched to email tab")
-                time.sleep(1)
+                wait_random(1, 2)
         except:
             logger.info("Email tab not needed or already selected")
+        
+        # Check for CAPTCHA after switching tabs
+        if use_enhanced_anti_bot:
+            check_and_solve_captcha(driver)
+            # Add random mouse movement
+            random_jitter_mouse(driver)
 
         # Fill in birth date if required
         if birth_date:
@@ -925,6 +1175,11 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
             except:
                 logger.info("Birth date form not present or already passed")
         
+        # Check for CAPTCHA before entering email
+        if use_enhanced_anti_bot:
+            check_and_solve_captcha(driver)
+            human_like_scroll(driver, scrolls=1)
+        
         # Enter email - try multiple selectors for different TikTok page versions
         email_selectors = [
             (By.CSS_SELECTOR, 'input[type="email"]'),
@@ -941,10 +1196,14 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
 
         email_input = bot.find_element_multiple_selectors(email_selectors, timeout=10)
         if email_input:
-            email_input.clear()
-            for char in email:
-                email_input.send_keys(char)
-                time.sleep(random.uniform(0.02, 0.05))
+            # Use human-like typing
+            if use_enhanced_anti_bot:
+                simulate_human_typing(email_input, email, fast=False)
+            else:
+                email_input.clear()
+                for char in email:
+                    email_input.send_keys(char)
+                    time.sleep(random.uniform(0.02, 0.05))
             logger.info(f"Entered email: {email}")
         else:
             logger.error("Could not find email input field")
@@ -996,7 +1255,11 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
             except:
                 pass
         
-        time.sleep(2)
+        wait_random(1, 3)
+        
+        # Check for CAPTCHA before entering password
+        if use_enhanced_anti_bot:
+            check_and_solve_captcha(driver)
         
         # Enter password - try multiple selectors for different TikTok page versions
         logger.info("Looking for password input field...")
@@ -1019,16 +1282,20 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
             if password_input:
                 break
             logger.info("Password field not found, waiting...")
-            time.sleep(3)
+            wait_random(2, 4)
         
         if password_input:
-            try:
-                password_input.clear()
-            except:
-                pass
-            for char in password:
-                password_input.send_keys(char)
-                time.sleep(random.uniform(0.02, 0.05))
+            # Use human-like typing for password
+            if use_enhanced_anti_bot:
+                simulate_human_typing(password_input, password, fast=True)
+            else:
+                try:
+                    password_input.clear()
+                except:
+                    pass
+                for char in password:
+                    password_input.send_keys(char)
+                    time.sleep(random.uniform(0.02, 0.05))
             logger.info("Entered password")
         else:
             logger.error("Could not find password input field")
@@ -1041,7 +1308,11 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
                 pass
             return None
         
-        time.sleep(1)
+        wait_random(1, 2)
+        
+        # Check for CAPTCHA before entering username
+        if use_enhanced_anti_bot:
+            check_and_solve_captcha(driver)
         
         # Enter username - always generate if not provided
         if not username:
@@ -1065,48 +1336,63 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
 
         username_input = bot.find_element_multiple_selectors(username_selectors, timeout=10)
         if username_input:
-            username_input.clear()
-            for char in username:
-                username_input.send_keys(char)
-                time.sleep(random.uniform(0.02, 0.05))
+            # Use human-like typing for username
+            if use_enhanced_anti_bot:
+                simulate_human_typing(username_input, username, fast=False)
+            else:
+                username_input.clear()
+                for char in username:
+                    username_input.send_keys(char)
+                    time.sleep(random.uniform(0.02, 0.05))
             logger.info(f"Entered username: {username}")
         else:
             logger.warning("Could not find username input field, may not be required yet")
         
-        # Click sign up button
+        # Random delay before clicking signup
+        if use_enhanced_anti_bot:
+            wait_random(0.5, 1.5)
+            random_jitter_mouse(driver)
+        
+        # Check for CAPTCHA before clicking signup
+        if use_enhanced_anti_bot:
+            check_and_solve_captcha(driver)
+        
+        # Click sign up button - with human-like click
         signup_selectors = [
             (By.XPATH, '//button[@type="submit"]'),
             (By.XPATH, '//button[contains(text(), "Sign up")]'),
             (By.XPATH, '//button[contains(text(), "Next")]'),
         ]
         
+        # Click signup button with human-like behavior
         for selector in signup_selectors:
             try:
                 signup_btn = WebDriverWait(driver, 5).until(
                     EC.element_to_be_clickable(selector)
                 )
-                signup_btn.click()
+                if use_enhanced_anti_bot:
+                    random_mouse_click(driver, signup_btn)
+                else:
+                    signup_btn.click()
                 logger.info("Clicked signup button")
                 break
             except:
                 continue
         
-        time.sleep(5)
+        wait_random(3, 6)
         
-        # Check for captcha
-        try:
-            captcha_frame = driver.find_element(By.XPATH, '//iframe[contains(@src, "captcha")]')
-            logger.warning("Captcha detected! Manual intervention required.")
-            print("\n" + "="*60)
-            print("CAPTCHA DETECTED!")
-            print("Please solve the captcha manually in the browser window.")
-            print("="*60 + "\n")
-            
-            # Wait for user to solve captcha
-            input("Press Enter after solving the captcha...")
-            time.sleep(3)
-        except:
-            pass
+        # Check for CAPTCHA using enhanced detection
+        if use_enhanced_anti_bot:
+            check_and_solve_captcha(driver)
+        
+        # Also check for blocks
+        if check_for_blocks(driver):
+            logger.warning("TikTok is blocking after signup click. Try using a proxy.")
+            return None
+        
+        # Random scroll to simulate human behavior
+        if use_enhanced_anti_bot:
+            human_like_scroll(driver, scrolls=1)
         
         # Check for email verification
         try:
@@ -1132,23 +1418,33 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
                         code = code_match.group(1)
                         logger.info(f"Found verification code: {code}")
                         
-                        verification_code_input.clear()
-                        for char in code:
-                            verification_code_input.send_keys(char)
-                            time.sleep(0.1)
+                        # Use human-like typing for verification code
+                        if use_enhanced_anti_bot:
+                            simulate_human_typing(verification_code_input, code, fast=True)
+                        else:
+                            verification_code_input.clear()
+                            for char in code:
+                                verification_code_input.send_keys(char)
+                                time.sleep(0.1)
                         
                         logger.info("Entered verification code")
-                        time.sleep(2)
+                        wait_random(1, 2)
                     else:
                         print(f"\nEmail body: {body[:500]}")
                         code = input("Enter the verification code manually: ").strip()
-                        verification_code_input.clear()
-                        verification_code_input.send_keys(code)
+                        if use_enhanced_anti_bot:
+                            simulate_human_typing(verification_code_input, code, fast=True)
+                        else:
+                            verification_code_input.clear()
+                            verification_code_input.send_keys(code)
                         time.sleep(2)
                 else:
                     code = input("Enter the verification code manually: ").strip()
-                    verification_code_input.clear()
-                    verification_code_input.send_keys(code)
+                    if use_enhanced_anti_bot:
+                        simulate_human_typing(verification_code_input, code, fast=True)
+                    else:
+                        verification_code_input.clear()
+                        verification_code_input.send_keys(code)
                     time.sleep(2)
             else:
                 print("\n" + "="*60)
@@ -1156,8 +1452,11 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
                 print("Enter the verification code from TikTok's email.")
                 print("="*60 + "\n")
                 code = input("Enter the verification code: ").strip()
-                verification_code_input.clear()
-                verification_code_input.send_keys(code)
+                if use_enhanced_anti_bot:
+                    simulate_human_typing(verification_code_input, code, fast=True)
+                else:
+                    verification_code_input.clear()
+                    verification_code_input.send_keys(code)
                 time.sleep(2)
                 
         except NoSuchElementException:
