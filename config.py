@@ -11,7 +11,7 @@ TIKTOK_PASSWORD = os.getenv("TIKTOK_PASSWORD", "yourpassword")
 COOKIE_FILE = "tiktok_cookies.txt"
 
 # Bot Settings
-HEADLESS = False  # Run in headless mode
+HEADLESS = True  # Run in headless mode
 BROWSER_MODE = "uc"  # Options: "uc" (undetected), "normal"
 MAX_RETRIES = 3
 WAIT_TIME = 10

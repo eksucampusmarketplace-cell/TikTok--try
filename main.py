@@ -79,13 +79,7 @@ def initialize_driver(proxy_data=None, fingerprint=None):
         if config.BROWSER_MODE == "uc":
             driver_args['uc'] = True
             logger.info("Using undetected-chromedriver mode")
-        
-        # Add anti-detection arguments
-        driver_args['incognito'] = True
-        driver_args['disable_gpu'] = True
-        driver_args['no_sandbox'] = True
-        driver_args['disable_dev_shm_usage'] = True
-        
+
         driver = Driver(**driver_args)
         driver.maximize_window()
         
