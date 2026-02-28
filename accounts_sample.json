@@ -1,0 +1,24 @@
+[
+  {
+    "email": "tfhvqxqj@guerrillamailblock.com",
+    "password": "Secure@Pass123!",
+    "username": "cooltiger456",
+    "status": "created",
+    "created_at": "2024-02-28T01:08:57",
+    "last_used": null,
+    "cookies": {},
+    "proxy": null,
+    "fingerprint": {
+      "platform": "Win32",
+      "screen": [1680, 1050],
+      "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "timezone": "America/New_York",
+      "language": "en-US",
+      "color_depth": 24,
+      "device_memory": 8,
+      "hardware_concurrency": 4,
+      "touch_support": false,
+      "canvas_hash": "a1b2c3d4e5f6"
+    }
+  }
+]
