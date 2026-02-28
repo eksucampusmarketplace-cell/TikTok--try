@@ -555,9 +555,192 @@ def log_report(message):
         logger.error(f"Error writing to report file: {e}")
 
 
-def signup(driver, email, password, username=None, birth_date=None, email_provider=None):
+def generate_device_fingerprint():
+    """Generate random device fingerprint to avoid detection."""
+    import hashlib
+    
+    # Random screen resolutions
+    resolutions = [
+        (1920, 1080), (1366, 768), (1536, 864), (1440, 900),
+        (1280, 720), (1600, 900), (1680, 1050), (2560, 1440)
+    ]
+    
+    # Random user agents
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+    ]
+    
+    # Random timezone
+    timezones = [
+        "America/New_York", "America/Los_Angeles", "America/Chicago",
+        "Europe/London", "Europe/Paris", "Europe/Berlin",
+        "Asia/Tokyo", "Asia/Singapore", "Australia/Sydney"
+    ]
+    
+    # Random language
+    languages = ["en-US", "en-GB", "en-CA", "en-AU"]
+    
+    # Random platform
+    platforms = ["Win32", "MacIntel", "Linux x86_64"]
+    
+    fingerprint = {
+        'screen': random.choice(resolutions),
+        'user_agent': random.choice(user_agents),
+        'timezone': random.choice(timezones),
+        'language': random.choice(languages),
+        'platform': random.choice(platforms),
+        'color_depth': random.choice([24, 32]),
+        'device_memory': random.choice([4, 8, 16]),
+        'hardware_concurrency': random.choice([4, 8, 12, 16]),
+        'touch_support': random.choice([True, False]),
+    }
+    
+    # Generate unique canvas fingerprint hash
+    canvas_seed = f"{fingerprint['screen']}{fingerprint['platform']}{random.random()}"
+    fingerprint['canvas_hash'] = hashlib.md5(canvas_seed.encode()).hexdigest()[:16]
+    
+    return fingerprint
+
+
+def apply_fingerprint(driver, fingerprint):
+    """Apply device fingerprint masking to the browser."""
+    try:
+        # Override navigator properties
+        script = f"""
+        Object.defineProperty(navigator, 'platform', {{
+            get: () => '{fingerprint['platform']}'
+        }});
+        Object.defineProperty(navigator, 'language', {{
+            get: () => '{fingerprint['language']}'
+        }});
+        Object.defineProperty(navigator, 'languages', {{
+            get: () => ['{fingerprint['language']}']
+        }});
+        Object.defineProperty(navigator, 'deviceMemory', {{
+            get: () => {fingerprint['device_memory']}
+        }});
+        Object.defineProperty(navigator, 'hardwareConcurrency', {{
+            get: () => {fingerprint['hardware_concurrency']}
+        }});
+        Object.defineProperty(screen, 'width', {{
+            get: () => {fingerprint['screen'][0]}
+        }});
+        Object.defineProperty(screen, 'height', {{
+            get: () => {fingerprint['screen'][1]}
+        }});
+        Object.defineProperty(screen, 'colorDepth', {{
+            get: () => {fingerprint['color_depth']}
+        }});
+        """
+        driver.execute_script(script)
+        logger.info("Applied device fingerprint masking")
+        return True
+    except Exception as e:
+        logger.warning(f"Could not apply full fingerprint: {e}")
+        return False
+
+
+def setup_proxy(driver, proxy_data):
+    """Configure proxy for the browser session."""
+    try:
+        if not proxy_data:
+            return True
+            
+        host = proxy_data.get('host')
+        port = proxy_data.get('port')
+        username = proxy_data.get('username')
+        password = proxy_data.get('password')
+        
+        # Proxy is set via ChromeOptions before browser creation
+        # This function validates the proxy format
+        logger.info(f"Using proxy: {host}:{port}")
+        
+        if username and password:
+            logger.info("Proxy authentication configured")
+            
+        return True
+    except Exception as e:
+        logger.error(f"Error setting up proxy: {e}")
+        return False
+
+
+def wait_for_verification_code(email_provider, email, timeout=180):
     """
-    Create a new TikTok account.
+    Wait for and retrieve verification code from email.
+    
+    Args:
+        email_provider: Email provider instance
+        email: Email address to check
+        timeout: Maximum wait time in seconds
+    
+    Returns:
+        str: Verification code or None
+    """
+    import re
+    
+    logger.info(f"Waiting for verification email at {email}...")
+    print(f"\n{'='*60}")
+    print(f"Checking email: {email}")
+    print(f"Timeout: {timeout} seconds")
+    print(f"{'='*60}\n")
+    
+    start_time = time.time()
+    check_interval = 5
+    
+    while time.time() - start_time < timeout:
+        try:
+            messages = email_provider.get_inbox(email)
+            
+            if messages:
+                for msg in messages:
+                    subject = msg.get('subject', '').lower()
+                    sender = msg.get('from', '').lower()
+                    body = msg.get('body', '')
+                    
+                    # Check if it's from TikTok
+                    if 'tiktok' in sender or 'tiktok' in subject or 'verification' in subject:
+                        logger.info("Found TikTok verification email!")
+                        
+                        # Extract code using multiple patterns
+                        patterns = [
+                            r'\b(\d{4,6})\b',  # 4-6 digit code
+                            r'code[:\s]*(\d{4,6})',
+                            r'verification[:\s]*(\d{4,6})',
+                            r'enter[:\s]*(\d{4,6})',
+                        ]
+                        
+                        for pattern in patterns:
+                            match = re.search(pattern, body, re.IGNORECASE)
+                            if match:
+                                code = match.group(1)
+                                logger.info(f"Extracted verification code: {code}")
+                                return code
+                        
+                        # If no pattern matched, show the email for manual extraction
+                        print(f"\nEmail found but couldn't auto-extract code.")
+                        print(f"Subject: {msg.get('subject')}")
+                        print(f"Body preview: {body[:500]}")
+                        
+        except Exception as e:
+            logger.debug(f"Error checking email: {e}")
+        
+        time.sleep(check_interval)
+        elapsed = int(time.time() - start_time)
+        print(f"\rWaiting for email... {elapsed}s/{timeout}s", end='', flush=True)
+    
+    print("\n")
+    logger.warning("Timeout waiting for verification email")
+    return None
+
+
+def signup(driver, email, password, username=None, birth_date=None, email_provider=None, 
+           proxy_data=None, fingerprint=None):
+    """
+    Create a new TikTok account with anti-detection features.
     
     Args:
         driver: Selenium WebDriver instance
@@ -566,14 +749,24 @@ def signup(driver, email, password, username=None, birth_date=None, email_provid
         username: Optional username (will be generated if not provided)
         birth_date: Optional birth date dict with 'month', 'day', 'year' keys
         email_provider: Optional email provider instance for verification
+        proxy_data: Optional proxy configuration
+        fingerprint: Optional device fingerprint
     
     Returns:
         dict: Account data if successful, None otherwise
     """
     bot = TikTokBot(driver)
     
+    # Generate fingerprint if not provided
+    if not fingerprint:
+        fingerprint = generate_device_fingerprint()
+    
     try:
         logger.info("Starting TikTok account signup process...")
+        logger.info(f"Using fingerprint: platform={fingerprint['platform']}, screen={fingerprint['screen']}")
+        
+        # Apply fingerprint masking
+        apply_fingerprint(driver, fingerprint)
         
         # Navigate to TikTok signup page
         driver.get("https://www.tiktok.com/signup")

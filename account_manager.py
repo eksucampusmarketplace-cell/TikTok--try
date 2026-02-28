@@ -232,9 +232,10 @@ class AccountCreator:
     
     def create_account(self, driver, use_proxy: bool = True, 
                        email: Optional[str] = None, password: Optional[str] = None,
-                       username: Optional[str] = None, birth_date: Optional[Dict] = None) -> Optional[Dict]:
+                       username: Optional[str] = None, birth_date: Optional[Dict] = None,
+                       rotate_proxy: bool = True, use_fingerprint: bool = True) -> Optional[Dict]:
         """
-        Create a new TikTok account.
+        Create a new TikTok account with anti-detection features.
         
         Args:
             driver: Selenium WebDriver instance
@@ -243,6 +244,8 @@ class AccountCreator:
             password: Custom password (or None to generate)
             username: Custom username (optional)
             birth_date: Birth date dict with 'month', 'day', 'year' keys
+            rotate_proxy: Whether to rotate proxies between accounts
+            use_fingerprint: Whether to use device fingerprint masking
         
         Returns:
             Account data dictionary or None
@@ -251,7 +254,7 @@ class AccountCreator:
             logger.info("Starting TikTok account creation...")
             
             # Import the signup function from tiktok module
-            from social_media.tiktok import signup
+            from social_media.tiktok import signup, generate_device_fingerprint
             
             # Get or generate email
             if not email and self.email_generator:
@@ -268,19 +271,35 @@ class AccountCreator:
             if not username:
                 username = self._generate_username()
             
-            # Get proxy if requested
+            # Get proxy if requested (with rotation)
             proxy = None
             if use_proxy and self.proxy_manager:
-                proxy = self.proxy_manager.get_proxy()
+                # Use random strategy for rotation
+                strategy = 'random' if rotate_proxy else 'round_robin'
+                proxy = self.proxy_manager.get_proxy(strategy=strategy)
+                if proxy:
+                    logger.info(f"Using proxy: {proxy.get('host')}:{proxy.get('port')}")
             
             # Set default birth date if not provided (over 18)
             if not birth_date:
-                birth_date = {'month': '1', 'day': '15', 'year': '1995'}
+                # Randomize birth date slightly
+                import random
+                birth_date = {
+                    'month': str(random.randint(1, 12)),
+                    'day': str(random.randint(1, 28)),
+                    'year': str(random.randint(1990, 2000))
+                }
             
             # Get email provider for verification (if available)
             email_provider = self.email_generator if hasattr(self.email_generator, 'generator') else None
             if email_provider and hasattr(email_provider, 'generator'):
                 email_provider = email_provider.generator
+            
+            # Generate device fingerprint for this account
+            fingerprint = None
+            if use_fingerprint:
+                fingerprint = generate_device_fingerprint()
+                logger.info(f"Generated fingerprint: {fingerprint['platform']}, {fingerprint['screen']}")
             
             # Call the real TikTok signup function
             account_data = signup(
@@ -289,12 +308,16 @@ class AccountCreator:
                 password=password,
                 username=username,
                 birth_date=birth_date,
-                email_provider=email_provider
+                email_provider=email_provider,
+                proxy_data=proxy,
+                fingerprint=fingerprint
             )
             
             if account_data:
                 # Add proxy info
                 account_data['proxy'] = proxy
+                # Add fingerprint info
+                account_data['fingerprint'] = fingerprint
                 
                 # Save account
                 if self.account_manager.add_account(account_data):
